@@ -2,10 +2,14 @@ version: '3'
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - zwippetech-network
   kafka:
     image: confluentinc/cp-kafka:latest
+    container_name: kafka
     depends_on:
       - zookeeper
     ports:
@@ -13,8 +17,11 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - zwippetech-network
   postgres-db:
     image: postgres:15
     container_name: postgres-db
@@ -29,3 +36,99 @@ services:
       - zwippetech-network
     volumes:
       - postgres-data:/var/lib/postgresql/data
+
+  kafdrop:
+    image: obsidiandynamics/kafdrop:latest
+    container_name: kafdrop
+    depends_on:
+      - kafka
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: "kafka:9092"
+      SERVER_PORT: 9000
+      JVM_OPTS: "-Xms64M -Xmx128M"
+    networks:
+      - zwippetech-network
+
+  transaction-service:
+    build:
+      context: ./transaction-service
+      dockerfile: Dockerfile
+    container_name: transaction-service
+    restart: always
+    depends_on:
+      - postgres-db
+      - kafka
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/zelify-db
+      SPRING_DATASOURCE_USERNAME: simon
+      SPRING_DATASOURCE_PASSWORD: simon
+      SPRING_JPA_HIBERNATE_DDL_AUTO: create
+      SERVER_PORT: 8080
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    ports:
+      - "8080:8080"
+    networks:
+      - zwippetech-network
+  
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    restart: always
+    depends_on:
+      - postgres-db
+      - kafka
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/zelify-db
+      SPRING_DATASOURCE_USERNAME: simon
+      SPRING_DATASOURCE_PASSWORD: simon
+      SPRING_JPA_HIBERNATE_DDL_AUTO: create
+      SERVER_PORT: 8081
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+    ports:
+      - "8081:8081"
+    networks:
+      - zwippetech-network
+
+  email-service:
+    build:
+      context: ./email-service
+      dockerfile: Dockerfile
+    container_name: mail-service
+    restart: always
+    depends_on:
+      - kafka
+    environment:
+      - SMTP_HOST=email-smtp.us-east-1.amazonaws.com
+      - SMTP_PORT=587
+      - SMTP_USER=USER_SMTP
+      - SMTP_PASSWORD=PASS_SMTP
+      - SMTP_FROM=cristian@gaviria.org
+      - KAFKA_BROKER=kafka:9092
+    ports:
+      - "8090:8090"
+    networks:
+      - zwippetech-network
+  
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    restart: always
+    depends_on:
+      - kafka
+    ports:
+      - "8091:8091"
+    networks:
+      - zwippetech-network
+
+networks:
+  zwippetech-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
