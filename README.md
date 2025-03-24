@@ -45,6 +45,60 @@ B -- send sms notification --> E[notification-service]
 E -- sms message --> F[\SMS Integrator/]
 ```
 
+### ✅  Resultados Esperados:
+
+1. **Envío Correcto de Notificaciones:**
+   - **transaction-service** y **auth-service** envían notificaciones por correo, SMS o WhatsApp según el tipo de evento (transacciones o inicios de sesión).
+   - **mail-service** y **notification-service** gestionan plantillas y envían notificaciones correctamente.
+
+2. **CRUD de Plantillas:**
+   - Se pueden crear, leer, actualizar y eliminar plantillas para correo y notificación.
+
+3. **Sustitución de Datos Dinámicos:**
+   - Las plantillas permiten reemplazar datos dinámicos antes de enviarlas.
+
+4. **Consultas API para Plantillas:**
+   - Los endpoints permiten consultar plantillas por tipo (correo, SMS, WhatsApp) de manera eficiente.
+
+### ❌  Casos Alternativos y Errores a Probar:
+
+1. **Error de Conexión al Servidor de Streaming:**
+   - Verificar reconexión automática y no pérdida de mensajes.
+
+2. **Datos Faltantes o Erróneos en Eventos:**
+   - Manejo adecuado de eventos con datos incompletos o incorrectos.
+
+3. **Errores en Plantillas:**
+   - Simular plantillas con errores de formato y asegurarse de que no se envíen.
+
+4. **Fallo en el Envío de Notificaciones:**
+   - Verificar cómo maneja los fallos en el envío de correos, SMS o WhatsApp (reintentos o notificación de error).
+
+5. **Fallo de Base de Datos:**
+   - Comprobar que el sistema maneja errores de base de datos correctamente sin afectar la funcionalidad.
+
+6. **Alta Carga de Mensajes:**
+   - Test de carga para asegurarse de que el sistema maneja un gran volumen de eventos sin problemas.
+
+7. **Acceso No Autorizado a Endpoints:**
+   - Verificar que los endpoints de CRUD de plantillas estén protegidos por autenticación.
+
+
+### 📌 Estrategias de Pruebas:
+
+1. **Pruebas Unitarias:** 
+   - Validar funciones individuales (creación de plantillas, sustitución de datos).
+   
+2. **Pruebas de Integración:**
+   - Asegurar que los servicios se integren correctamente y gestionen eventos de streaming.
+
+3. **Pruebas de Carga:** 
+   - Simular alto volumen de eventos para evaluar rendimiento.
+
+4. **Pruebas de Resiliencia:**
+   - Verificar cómo maneja fallos en servicios de streaming, base de datos y envío de notificaciones.
+
+
 ### Funcionalidades
 1. CRUD de templates para email.
 2. CRUD de templates para sms y WhatsApp.
